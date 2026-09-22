@@ -1,0 +1,65 @@
+{
+    "darkMode": false,
+    "compactTable": false,
+    "selected_model": "YOLOv8s",
+    "plate_commit_threshold": 0.40,
+    "live_ocr_floor": 0.40,
+    "cameras": [
+        {
+            "id": "CAM_1",
+            "name": "CAM 1",
+            "url": "rtsp://admin:KSS_admin@10.177.85.189:554/cam/realmonitor?channel=1&subtype=1",
+            "enabled": true,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_2",
+            "name": "CAM 2",
+            "url": "rtsp://admin:KSS_admin@10.177.85.189:554/cam/realmonitor?channel=1&subtype=0",
+            "enabled": true,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_3",
+            "name": "CAM 3",
+            "url": "rtsp://dummy/cam3",
+            "enabled": false,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_4",
+            "name": "CAM 4",
+            "url": "rtsp://dummy/cam4",
+            "enabled": false,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_5",
+            "name": "CAM 5",
+            "url": "rtsp://dummy/cam5",
+            "enabled": false,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_6",
+            "name": "CAM 6",
+            "url": "rtsp://dummy/cam6",
+            "enabled": false,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_7",
+            "name": "CAM 7",
+            "url": "rtsp://dummy/cam7",
+            "enabled": false,
+            "mode": "monitoring"
+        },
+        {
+            "id": "CAM_8",
+            "name": "CAM 8",
+            "url": "rtsp://dummy/cam8",
+            "enabled": false,
+            "mode": "monitoring"
+        }
+    ]
+}

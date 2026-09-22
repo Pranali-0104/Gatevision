@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+python-multipart
+opencv-python
+numpy
+easyocr
+fpdf
+PyJWT
+bcrypt
+torch 
+torchvision 
+torchaudio
+ultralytics

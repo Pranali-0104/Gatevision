@@ -1,0 +1,44 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Storage & uploads (crops, reports, legacy images)
+backend/storage/
+storage/
+
+# Logs
+logs/
+*.log
+
+# Model weights / weights cache
+*.pt
+*.pth
+*.onnx
+
+# Temporary files & OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+temp/
+tmp/
+backend/debug_crops/
+backend/debug_detections/
+backend/response.txt
+
+# IDE / Editor configuration
+.vscode/
+.idea/

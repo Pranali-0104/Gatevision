@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>GateVision</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="loginView" class="login-view">
+        <form class="login-card" onsubmit="login(event)">
+            <h1>GateVision</h1>
+            <h2>Secure Login</h2>
+            <label>Login ID</label>
+            <input id="loginLoginId" autocomplete="username" placeholder="superadmin">
+            <label>Password</label>
+            <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password">
+            <button id="loginBtn" type="submit">Login</button>
+            <p id="loginError"></p>
+        </form>
+    </div>
+
+    <div class="app">
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h2>🚗 GateVision</h2>
+            <button onclick="showPage('home')" id="sidebarHomeBtn">Home</button>
+            <button onclick="showPage('live')" id="sidebarLiveBtn">Live</button>
+            <button onclick="showPage('records')">Records</button>
+            <button onclick="showPage('settings')">Settings</button>
+            <button onclick="showPage('users')">Users</button>
+            <button onclick="showPage('categories')">Categories</button>
+            <button onclick="showPage('sessions')" id="sidebarSessionsBtn" style="display: none;">Sessions</button>
+            <button onclick="showPage('audit_logs')" id="sidebarAuditBtn" style="display: none;">Audit Logs</button>
+            <button onclick="openSystemStatus()">System Status</button>
+            <div class="session-box">
+                <strong id="sessionUser">-</strong>
+                <span id="sessionRoles">-</span>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Main -->
+        <div class="main">
+
+            <!-- HOME PAGE (8-Grid Camera View) -->
+            <div id="home" class="page">
+                <h2>Dashboard Home</h2>
+                <div class="card">
+                    <h3>Active Cameras</h3>
+                    <div id="cameraGrid" class="camera-grid"></div>
+                </div>
+            </div>
+
+            <div id="live" class="page active">
+                <h2>Live Detection</h2>
+
+                <div class="dashboard-metrics-grid">
+                    <div class="metric-card today">
+                        <div class="metric-title">Today's Detections</div>
+                        <div class="metric-value" id="metricToday">-</div>
+                        <div class="metric-subtext">Logged in UTC timezone</div>
+                    </div>
+                    <div class="metric-card vip">
+                        <div class="metric-title">VIP Matches</div>
+                        <div class="metric-value" id="metricVip">-</div>
+                        <div class="metric-subtext">Active whitelist matches</div>
+                    </div>
+                    <div class="metric-card blacklist">
+                        <div class="metric-title">Blacklist Matches</div>
+                        <div class="metric-value" id="metricBlacklist">-</div>
+                        <div class="metric-subtext">Alert-triggering categories</div>
+                    </div>
+                    <div class="metric-card total">
+                        <div class="metric-title">Total Database Records</div>
+                        <div class="metric-value" id="metricTotal">-</div>
+                        <div class="metric-subtext">Up to 15 days retention</div>
+                    </div>
+                </div>
+
+                <div class="card" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label style="margin: 0;">Manual Upload:</label>
+                        <input type="file" id="fileInput">
+                        <button onclick="upload()" id="detectBtn">Detect</button>
+                    </div>
+                    <div style="border-left: 2px solid #cbd5e1; height: 30px; margin: 0 10px;"></div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="modelSelector" style="margin: 0; font-weight: 600;">Detection Model:</label>
+                        <select id="modelSelector" onchange="selectModel()" style="padding: 6px 12px; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; color: #1f2937;">
+                            <option value="YOLOv8n">YOLOv8n</option>
+                            <option value="YOLOv8s">YOLOv8s</option>
+                            <option value="YOLOv8m">YOLOv8m (Experimental)</option>
+                            <option value="YOLOv8l" disabled>YOLOv8l (Coming Soon)</option>
+                            <option value="YOLOv8x" disabled>YOLOv8x (Coming Soon)</option>
+                        </select>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #4b5563; margin-left: auto;">
+                        Active Model: <strong id="activeModelDisplay" style="color: #2563eb; background: #dbeafe; padding: 4px 8px; border-radius: 4px;">YOLOv8n</strong>
+                    </div>
+                </div>
+
+                <div class="card" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label>RTSP / Camera URL:</label>
+                        <input type="text" id="rtsp_url" placeholder="rtsp://... or video.mp4"
+                            style="width: 100%; padding: 8px;">
+                    </div>
+                    <button onclick="startLiveStream()" id="startStreamBtn"
+                        style="background: #16a34a; white-space: nowrap;">Start IP
+                    </button>
+                    <button onclick="startWebcam()" id="startWebcamBtn"
+                        style="background: #2563eb; white-space: nowrap;">Start Webcam</button>
+                    <button onclick="stopLiveStream()" id="stopStreamBtn"
+                        style="background: #dc2626; display: none; white-space: nowrap;">Stop Camera</button>
+                </div>
+
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">Dashboard Camera</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="quickRtspUrl" placeholder="Enter RTSP URL..." style="width: 250px; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                            <select id="quickCameraRole" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <option value="detection">Detecting</option>
+                                <option value="monitoring">Monitoring</option>
+                            </select>
+                            <button onclick="startQuickStream()" style="background: #2563eb; color: white; border: none; border-radius: 4px; padding: 4px 12px; cursor: pointer;">Start Stream</button>
+                            <div style="width: 1px; height: 24px; background: #cbd5e1; margin: 0 10px;"></div>
+                            <select id="dashboardCameraSelect" onchange="updateDashboardCamera()" style="padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                <option value="">Select Camera...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="container">
+                        <div class="left-panel">
+                            <div class="camera-container" id="cameraContainer">
+                                <img id="dashboardPreview" src="" class="is-empty" />
+                                <div class="camera-label" id="dashboardCameraLabel">SELECT A CAMERA</div>
+                                <div class="camera-time" id="cameraTime">--:--:--</div>
+                                <div class="scan-status" id="dashboardScanStatus">Waiting for stream...</div>
+                            </div>
+                        </div>
+
+                        <div class="right-panel">
+                            <p id="plate">Plate: -</p>
+                            <p id="modelUsedDisplay">Model Used: -</p>
+                            <p id="detectorUsedDisplay">Detector Used: -</p>
+                            <p id="category">Category: -</p>
+                            <p id="site">Site: -</p>
+                            <p id="camera">Camera: -</p>
+                            <p id="time">Time: -</p>
+                            <p id="alert"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="liveQueueCard">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3>Live Review Queue</h3>
+                        <button onclick="clearQueue()"
+                            style="background: #64748b; height: 32px; padding: 0 12px;">Clear</button>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 8px;">Time</th>
+                                <th style="padding: 8px;">Plate</th>
+                                <th style="padding: 8px;">Category</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueTableBody">
+                            <tr>
+                                <td colspan="3" style="padding: 8px; color: #64748b; text-align: center;">Queue is empty
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!--Users-->
+            <!-- USERS PAGE -->
+            <div id="users" class="page">
+                <h2>User Management</h2> <!-- ADD USER -->
+                <div class="card">
+                    <h3>Add New User</h3>
+                    <div class="user-controls">
+                        <div> <label>Login ID</label> <input id="login_id" placeholder="Enter login ID"> </div>
+                        <div> <label>Employee ID</label> <input id="employee_id" placeholder="Enter employee ID"> </div>
+                        <div> <label>First Name</label> <input id="first_name" placeholder="Enter first name"> </div>
+                        <div> <label>Last Name</label> <input id="last_name" placeholder="Enter last name"> </div>
+                        <div> <label>Category</label> <select id="user_category">
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                            </select> </div>
+                        <div> <label>LMS Access</label> <select id="lms_login">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select> </div>
+                        <div> <label>CMS Access</label> <select id="cms_login">
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
+                            </select> </div>
+                        <div> <label>Password</label> <input id="new_user_password" type="password"
+                                placeholder="Temporary password"> </div>
+                        <div> <label>Role</label> <select id="new_user_role">
+                                <option>Viewer</option>
+                                <option>Operator</option>
+                                <option>Admin</option>
+                                <option>Super Admin</option>
+                            </select> </div>
+                    </div> <button onclick="addUser()" style="margin-top:15px;">Add User</button>
+                </div> <!-- USER TABLE -->
+                <div class="card">
+                    <h3>Users List</h3>
+                    <div class="table-actions" style="margin-bottom: 15px; display: flex; gap: 10px;">
+                        <button id="editUserBtn" onclick="openEditUserModal()" disabled>Edit Selected</button>
+                        <button id="deleteUserBtn" onclick="deleteSelectedUser()" disabled
+                            style="background-color: #dc2626;">Delete Selected</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Login ID</th>
+                                <th>Employee ID</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Category</th>
+                                <th>LMS</th>
+                                <th>CMS</th>
+                                <th>Roles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- CATEGORIES PAGE -->
+            <div id="categories" class="page">
+                <h2>Category Management</h2>
+
+                <div class="card">
+                    <h3>Categories</h3>
+                    <div class="user-controls" style="align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <label>Name</label>
+                            <input id="new_category_name" placeholder="e.g., VIP">
+                        </div>
+                        <div>
+                            <label>Code</label>
+                            <input id="new_category_code" placeholder="e.g., vip">
+                        </div>
+                        <div>
+                            <label>Icon (Emoji)</label>
+                            <input id="new_category_icon" placeholder="e.g., 🟢" style="width: 80px;">
+                        </div>
+                        <div>
+                            <label>Color</label>
+                            <input type="color" id="new_category_color" value="#3b82f6"
+                                style="height: 42px; padding: 2px; width: 60px;">
+                        </div>
+                        <div>
+                            <label>Description</label>
+                            <input id="new_category_description" placeholder="Description">
+                        </div>
+                        <button onclick="addCategory()">Add Category</button>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <ul id="categoryList"
+                            style="list-style-type: none; padding: 0; display: flex; gap: 10px; flex-wrap: wrap;"></ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Hotlist Management</h3>
+                    <div class="user-controls" style="align-items: flex-end;">
+                        <div>
+                            <label>License Plate</label>
+                            <input id="hotlist_plate" placeholder="Enter Plate Number">
+                        </div>
+                        <div>
+                            <label>Category</label>
+                            <select id="hotlist_category">
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <button onclick="addHotlistEntry()">Add to Hotlist</button>
+                    </div>
+
+                    <table style="margin-top: 15px;">
+                        <thead>
+                            <tr>
+                                <th>Plate</th>
+                                <th>Category</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hotlistTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RECORDS -->
+            <div id="records" class="page">
+                <h2>Records</h2>
+
+                <div class="card record-detail-panel">
+                    <div class="record-preview" style="display: flex; gap: 10px; overflow-x: auto; flex: 1; align-items: center; background: #000; justify-content: center; min-height: 250px;">
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <span style="font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">PLATE</span>
+                            <img id="recordPreview" src="" alt="Plate crop" style="max-height: 200px; object-fit: contain;">
+                        </div>
+                    </div>
+                    <div class="record-details" style="min-width: 250px;">
+                        <p id="recordPlate">Plate: -</p>
+                        <p id="recordCategory">Category: -</p>
+                        <p id="recordSite">Gate: -</p>
+                        <p id="recordCamera">Lane: -</p>
+                        <p id="recordTime">Time: -</p>
+                        <p id="recordAlert"></p>
+                        <button id="deleteRecordBtn" onclick="deleteSelectedRecord()" style="background-color: #dc2626; margin-top: 10px; display: none;">Delete Record</button>
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <input id="searchPlate" placeholder="Search Plate..." />
+
+                    <select id="filterCategory">
+                        <option value="">All Categories</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Stolen">Stolen</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                    <select id="filterSite">
+                        <option value="">All Gates</option>
+                        <option value="GATE_1">GATE_1</option>
+                        <option value="GATE_2">GATE_2</option>
+                    </select>
+                    <select id="filterCamera">
+                        <option value="">All Lanes</option>
+                        <option value="ENTRY">ENTRY</option>
+                        <option value="EXIT">EXIT</option>
+                    </select>
+                    <input type="date" id="fromDate" />
+                    <input type="date" id="toDate" />
+                    <button onclick="applyFilters()">Search</button>
+                    <button onclick="resetFilters()">Reset</button>
+                    <button onclick="loadRecords()">Refresh</button>
+
+                    <button onclick="exportRecords('pdf')" style="background-color: #ef4444;">Export PDF</button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Plate</th>
+                            <th>Category</th>
+                            <th>Gate</th>
+                            <th>Lane</th>
+                            <th>Time</th>
+                            <th>Image</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable"></tbody>
+                </table>
+            </div>
+
+            <!-- SETTINGS -->
+            <div id="settings" class="page">
+                <h2>Settings</h2>
+
+                <div class="settings-grid">
+                    <section class="card settings-section">
+                        <h3>System Info</h3>
+                        <div class="info-grid">
+                            <div>
+                                <span>Storage</span>
+                                <strong>277 GB available</strong>
+                            </div>
+                            <div>
+                                <span>Status</span>
+                                <strong>Online</strong>
+                            </div>
+                            <div>
+                                <span>Active Camera</span>
+                                <strong>ENTRY_1</strong>
+                            </div>
+                            <div>
+                                <span>Last Sync</span>
+                                <strong>Just now</strong>
+                            </div>
+                        </div>
+                        <button onclick="openStorageModal()">Storage Details</button>
+                    </section>
+
+                    <section class="card settings-section">
+                        <h3>Layout Settings</h3>
+                        <label class="toggle-row">
+                            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+                            <span>Dark mode</span>
+                        </label>
+                        <label class="toggle-row">
+                            <input type="checkbox" checked>
+                            <span>Compact records table</span>
+                        </label>
+                    </section>
+                </div>
+
+                <section class="card settings-section">
+                    <h3>User Management</h3>
+                    <div class="user-controls">
+                        <input type="text" id="username" placeholder="Enter name">
+                        <select id="role">
+                            <option>Admin</option>
+                            <option>Operator</option>
+                            <option>Viewer</option>
+                        </select>
+                        <button onclick="addUser()">Add User</button>
+                    </div>
+
+                    <ul id="userList"></ul>
+                </section>
+            </div>
+
+            <!-- SESSIONS PAGE -->
+            <div id="sessions" class="page">
+                <h2>Session History</h2>
+                
+                <div class="tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
+                    <button class="tab-btn active" onclick="switchSessionTab('login')" style="background: #2563eb;">Login Details</button>
+                    <button class="tab-btn" onclick="switchSessionTab('session')" style="background: #4b5563;">Session Details</button>
+                </div>
+
+                <div class="filters" style="margin-top: 15px;">
+                    <input type="text" id="sessionSearch" placeholder="Search User or IP..." style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 200px;" />
+                    <input type="date" id="sessionFromDate" style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                    <input type="date" id="sessionToDate" style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                    <button onclick="applySessionFilters()">Search</button>
+                    <button onclick="resetSessionFilters()" style="background: #64748b;">Reset</button>
+                </div>
+
+                <div class="card" style="margin-top: 15px;">
+                    <!-- Login Details Table -->
+                    <div id="loginDetailsTableContainer">
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Login Time</th>
+                                    <th>User</th>
+                                    <th>Logout Time</th>
+                                    <th>Access Status</th>
+                                    <th>IP Address</th>
+                                    <th>User Agent</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loginDetailsTableBody">
+                                <tr><td colspan="6" class="empty-cell">Loading sessions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Session Details Table -->
+                    <div id="sessionDetailsTableContainer" style="display: none;">
+                        <table style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>Session ID</th>
+                                    <th>User</th>
+                                    <th>Active Status</th>
+                                    <th>Login Time</th>
+                                    <th>Logout Time</th>
+                                    <th>Duration</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessionDetailsTableBody">
+                                <tr><td colspan="7" class="empty-cell">Loading sessions...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="sessionPaginationInfo" style="font-size: 14px; color: #64748b;">Showing 0-0 of 0</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="prevSessionPageBtn" onclick="changeSessionPage(-1)" style="background: #4b5563;">Prev</button>
+                            <button id="nextSessionPageBtn" onclick="changeSessionPage(1)" style="background: #4b5563;">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AUDIT LOGS PAGE -->
+            <div id="audit_logs" class="page">
+                <h2>System Audit Logs</h2>
+
+                <div class="filters">
+                    <input type="text" id="auditSearch" placeholder="Search action or user..." style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 220px;" />
+                    
+                    <select id="auditFilterEntity" style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 160px; background: white;">
+                        <option value="">All Entity Types</option>
+                        <option value="User">User</option>
+                        <option value="Category">Category</option>
+                        <option value="Hotlist">Hotlist</option>
+                        <option value="Record">Record</option>
+                        <option value="Settings">Settings</option>
+                        <option value="System">System</option>
+                    </select>
+
+                    <input type="date" id="auditFromDate" style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                    <input type="date" id="auditToDate" style="height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" />
+                    <button onclick="applyAuditFilters()">Search</button>
+                    <button onclick="resetAuditFilters()" style="background: #64748b;">Reset</button>
+                </div>
+
+                <div class="card" style="margin-top: 15px;">
+                    <table style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Entity Type</th>
+                                <th>Entity ID</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogsTableBody">
+                            <tr><td colspan="6" class="empty-cell">Loading audit logs...</td></tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Pagination -->
+                    <div class="pagination" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="auditPaginationInfo" style="font-size: 14px; color: #64748b;">Showing 0-0 of 0</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="prevAuditPageBtn" onclick="changeAuditPage(-1)" style="background: #4b5563;">Prev</button>
+                            <button id="nextAuditPageBtn" onclick="changeAuditPage(1)" style="background: #4b5563;">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="statusModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="statusModalTitle">
+            <div class="modal-header">
+                <h2 id="statusModalTitle">Site Status</h2>
+                <button class="modal-close" onclick="closeSystemStatus()" aria-label="Close">X</button>
+            </div>
+            <div id="statusModalContent"></div>
+        </div>
+    </div>
+
+    <div id="storageModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-box" style="width: min(720px, 95%);" role="dialog" aria-modal="true" aria-labelledby="storageModalTitle">
+            <div class="modal-header">
+                <h2 id="storageModalTitle">System Storage</h2>
+                <button class="modal-close" onclick="closeStorageModal()" aria-label="Close">X</button>
+            </div>
+            <div id="storageModalContent"></div>
+        </div>
+    </div>
+
+    <div id="editUserModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="editUserModalTitle">
+            <div class="modal-header">
+                <h2 id="editUserModalTitle">Edit User</h2>
+                <button class="modal-close" onclick="closeEditUserModal()" aria-label="Close">X</button>
+            </div>
+            <div style="padding: 18px;">
+                <div class="user-controls">
+                    <div> <label>Login ID</label> <input id="edit_login_id" placeholder="Enter login ID"> </div>
+                    <div> <label>Employee ID</label> <input id="edit_employee_id" placeholder="Enter employee ID">
+                    </div>
+                    <div> <label>First Name</label> <input id="edit_first_name" placeholder="Enter first name"> </div>
+                    <div> <label>Last Name</label> <input id="edit_last_name" placeholder="Enter last name"> </div>
+                    <div> <label>Category</label> <select id="edit_category">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                        </select> </div>
+                    <div> <label>LMS Access</label> <select id="edit_lms_login">
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
+                        </select> </div>
+                    <div> <label>CMS Access</label> <select id="edit_cms_login">
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
+                        </select> </div>
+                    <div> <label>Password</label> <input id="edit_password" type="password"
+                            placeholder="Leave blank to keep current"> </div>
+                    <div> <label>Role</label> <select id="edit_role">
+                            <option>Viewer</option>
+                            <option>Operator</option>
+                            <option>Admin</option>
+                            <option>Super Admin</option>
+                        </select> </div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button onclick="updateUser()">Save Changes</button>
+                    <button onclick="closeEditUserModal()" style="background: #64748b;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="auditDetailModal" class="modal-overlay" aria-hidden="true">
+        <div class="modal-box" style="width: min(680px, 100%);" role="dialog" aria-modal="true" aria-labelledby="auditDetailModalTitle">
+            <div class="modal-header">
+                <h2 id="auditDetailModalTitle">Audit Log Details</h2>
+                <button class="modal-close" onclick="closeAuditDetailModal()" aria-label="Close">X</button>
+            </div>
+            <div style="padding: 18px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; font-size: 14px;">
+                    <div>
+                        <strong>Action:</strong> <span id="auditDetAction">-</span>
+                    </div>
+                    <div>
+                        <strong>User:</strong> <span id="auditDetUser">-</span>
+                    </div>
+                    <div>
+                        <strong>Entity Type/ID:</strong> <span id="auditDetEntity">-</span>
+                    </div>
+                    <div>
+                        <strong>Timestamp:</strong> <span id="auditDetTime">-</span>
+                    </div>
+                </div>
+                <div class="modal-diff-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <strong style="display: block; margin-bottom: 6px; color: #dc2626;">Old Value (Before)</strong>
+                        <pre id="auditDetOld" style="background: #f1f5f9; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 11px; max-height: 250px; min-height: 100px; margin: 0; white-space: pre-wrap; word-break: break-all; border: 1px solid #cbd5e1;"></pre>
+                    </div>
+                    <div>
+                        <strong style="display: block; margin-bottom: 6px; color: #16a34a;">New Value (After)</strong>
+                        <pre id="auditDetNew" style="background: #f1f5f9; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 11px; max-height: 250px; min-height: 100px; margin: 0; white-space: pre-wrap; word-break: break-all; border: 1px solid #cbd5e1;"></pre>
+                    </div>
+                </div>
+                <button onclick="closeAuditDetailModal()" style="margin-top: 15px; background: #64748b; width: 100%; height: 38px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alertOverlay" aria-hidden="true">
+        <div class="alert-overlay-text">🚨 STOLEN VEHICLE DETECTED 🚨</div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
